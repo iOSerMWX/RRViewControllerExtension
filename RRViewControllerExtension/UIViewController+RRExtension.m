@@ -314,6 +314,9 @@ static char kAssociatedObjectKey_visibleState;
     
     if([self.navigationController isKindOfClass:[UIImagePickerController class]])
         return;
+    if ([self overtyleSettingsByYourSelf]) {
+        return;
+    }
     
     BOOL hidden = [self prefersNavigationBarHidden];
 
@@ -417,7 +420,10 @@ static char kAssociatedObjectKey_visibleState;
 {
     return self.navigationController.defaultNavigationBarTransparent;
 }
-
+/// 自己设置样式 yes 则不会在 viewWillAppear 中触发 updateNavigationAppearance NO 则会触发 默认为NO
+-(BOOL)overtyleSettingsByYourSelf {
+    return NO;
+}
 
 -(BOOL)prefersNavigationBarHidden
 {

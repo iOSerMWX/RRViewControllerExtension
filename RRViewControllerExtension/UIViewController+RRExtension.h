@@ -59,6 +59,8 @@ typedef void (^RRViewControllerLifecycleHookBlock) (UIViewController *viewContro
 #pragma mark- UINavigation related
 /*----------------methods below are for sublclass to override ------------*/
 
+/// 自己设置样式 yes 则不会在 viewWillAppear 中触发 updateNavigationAppearance NO 则会触发 默认为NO 
+-(BOOL)overtyleSettingsByYourSelf;
 //return YES to hide navigationBar and NO ro display navigationBar
 -(BOOL)prefersNavigationBarHidden;
 

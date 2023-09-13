@@ -195,7 +195,7 @@ __weak UIViewController *sRRStatCurrentViewController; //当前正在统计的VC
     [self rrEndStatisticViewController:sRRStatCurrentViewController];
     
     //viewController是否需要统计
-    if(viewController.statisticEnabled) {
+    if(viewController.statisticEnabled && [viewController statisticName]) {
         [self rrBeginStatisticViewController:viewController fromRecover:NO];
     }
     
