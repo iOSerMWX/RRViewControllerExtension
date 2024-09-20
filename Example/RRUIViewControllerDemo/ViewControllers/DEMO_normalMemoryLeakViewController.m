@@ -62,6 +62,35 @@ static int sCreatedCount;
 
     return NO;
 }
+- (IBAction)pushNextController:(UIButton *)sender {
+    BOOL animated = arc4random()%2 == 0;
+    [self.navigationController pushViewController:[[[self class] alloc] init] animated:animated completionBlock:^{
+        NSLog(@"pushNextController completionBlock, animated: %@",@(animated));
+    }];
+}
+- (IBAction)pop:(UIButton *)sender {
+    BOOL animated = arc4random()%2 == 0;
+    [self.navigationController popViewControllerAnimated:animated completionBlock:^{
+        NSLog(@"pop completionBlock, animated: %@",@(animated));
+    }];
+}
+- (IBAction)popToRootViewController:(UIButton *)sender {
+    BOOL animated = arc4random()%2 == 0;
+    [self.navigationController popToRootViewControllerAnimated:animated completionBlock:^{
+        NSLog(@"popToRootViewController completionBlock, animated: %@",@(animated));
+    }];
+    
+}
+- (IBAction)popLastViewController:(UIButton *)sender {
+    BOOL animated = arc4random()%2 == 0;
+    UIViewController *vc = self.navigationController.viewControllers.firstObject;
+    if (self.navigationController.viewControllers.count > 2) {
+        vc = self.navigationController.viewControllers[1];
+    }
+    [self.navigationController popToViewController:vc animated:animated completionBlock:^{
+        NSLog(@"popLastViewController completionBlock, animated: %@",@(animated));
+    }];
+}
 
 
 
