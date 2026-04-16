@@ -272,7 +272,13 @@ static char kAssociatedObjectKey_visibleState;
     return [((NSNumber *)objc_getAssociatedObject(self, &kAssociatedObjectKey_visibleState)) unsignedIntegerValue];
 }
 
-
+static char kAssociatedObjectKey_overtyleSettingsByYourSelf;
+-(void)setRr_overtyleSettingsByYourSelf:(BOOL)rr_overtyleSettingsByYourSelf {
+    objc_setAssociatedObject(self, &kAssociatedObjectKey_overtyleSettingsByYourSelf, @(rr_overtyleSettingsByYourSelf), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+-(BOOL)rr_overtyleSettingsByYourSelf {
+    return [(objc_getAssociatedObject(self, &kAssociatedObjectKey_overtyleSettingsByYourSelf)) boolValue];
+}
 #pragma mark-
 
 //only adapt for calling in method -loadView
@@ -315,6 +321,9 @@ static char kAssociatedObjectKey_visibleState;
     
     if([self.navigationController isKindOfClass:[UIImagePickerController class]])
         return;
+    if ([self overtyleSettingsByYourSelf] || [self rr_overtyleSettingsByYourSelf]) {
+        return;
+    }
     
     BOOL hidden = [self prefersNavigationBarHidden];
 
@@ -418,10 +427,18 @@ static char kAssociatedObjectKey_visibleState;
 {
     return self.navigationController.defaultNavigationBarTransparent;
 }
-
+/// 自己设置样式 yes 则不会在 viewWillAppear 中触发 updateNavigationAppearance NO 则会触发 默认为NO
+-(BOOL)overtyleSettingsByYourSelf {
+    return NO;
+}
 
 -(BOOL)prefersNavigationBarHidden
 {
+    NSString *className = NSStringFromClass(self.class);
+    if ([className hasPrefix:@"TXY"]) {
+        /// 人脸识别的controller
+        return true;
+    }
     return self.navigationController.defaultNavigationBarHidden;
 }
 
@@ -489,6 +506,7 @@ static char kAssociatedObjectKey_visibleState;
         //这个操作骚不骚？Coquettish operation 就这么叫吧
         for(int i=0; i<1000; i++) //limit loop time to avoid dead loop
         {
+            //TODO: 这里应该判断一下tmpVc是否为nil
             selfIndx = [viewControllers indexOfObject:tmpVc];
             if(selfIndx != NSNotFound)
                 break;
@@ -544,16 +562,14 @@ static char kAssociatedObjectKey_visibleState;
     __weak typeof(self) weak_self = self;
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        
         if(weak_self
            && !weak_self.parentViewController
            && !weak_self.presentingViewController
            && !weak_self.view.superview)
         {
-            __strong typeof(weak_self) strong_self = weak_self;
-            if([sVcLeakDetectionHashTable containsObject:strong_self])
-            {
-                [strong_self didReceiveMemoryLeakWarning];
+//            __strong typeof(weak_self) strong_self = weak_self;
+            if([sVcLeakDetectionHashTable containsObject:weak_self]) {
+                [weak_self didReceiveMemoryLeakWarning];
             }
         }
     });
