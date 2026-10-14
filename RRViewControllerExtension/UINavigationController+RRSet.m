@@ -110,6 +110,10 @@ static char kAssociatedObjectKey_Transparent_SetupProperty;
 #pragma mark - UINavigationBar+RRSet
 @implementation UINavigationBar (RRSet)
 +(void)load {
+    // Liquid Glass 自己管理背景层，旧版双背景修补会隐藏新系统材质并访问已变化的私有字段。
+    if (@available(iOS 26.0, *)) {
+        return;
+    }
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         /// - [_UIBarBackground updateBackground]
@@ -157,6 +161,10 @@ static char kAssociatedObjectKey_Transparent_SetupProperty;
     handler(appearance);
     self.standardAppearance = appearance;
     self.scrollEdgeAppearance = appearance;
+    if (@available(iOS 26.0, *)) {
+        self.compactAppearance = appearance;
+        self.compactScrollEdgeAppearance = appearance;
+    }
 }
 
 
@@ -170,6 +178,12 @@ static char kAssociatedObjectKey_Transparent_SetupProperty;
     }
 }
 -(void)reloadBarShadowImage:(nullable UIImage *)img{
+    if (@available(iOS 26.0, *)) {
+        [self _updateAppearanceBarActionBlock:^(UINavigationBarAppearance *appearance) {
+            appearance.shadowImage = img;
+        }];
+        return;
+    }
     if (@available(iOS 15.0, *)) {
         [self _updateAppearanceBarActionBlock:^(UINavigationBarAppearance *appearance) {
             appearance.shadowImage = img;
@@ -210,6 +224,19 @@ static char kAssociatedObjectKey_Transparent_SetupProperty;
 }
 
 -(void)_reloadBarTransparent:(BOOL)transparent {
+    if (@available(iOS 26.0, *)) {
+        [self setRr_Transparent:transparent];
+        [self _updateAppearanceBarActionBlock:^(UINavigationBarAppearance *appearance) {
+            // 从透明页面返回时恢复完整默认配置，避免上一页的透明图片和颜色污染下一页。
+            if (transparent) {
+                [appearance configureWithTransparentBackground];
+            } else {
+                [appearance configureWithDefaultBackground];
+                appearance.backgroundColor = [self rr_OrginBackgroundColor];
+            }
+        }];
+        return;
+    }
     if (@available(iOS 15.0, *)) {
         [self setRr_Transparent:transparent];
         
@@ -367,6 +394,12 @@ static char kAssociatedObjectKey_Transparent_SetupProperty;
 #pragma mark- transparent
 -(void)setNavigationBarTransparent:(BOOL)transparent
 {
+    if (@available(iOS 26.0, *)) {
+        // 每次页面切换都重建公开 appearance，覆盖显式设置过背景的页面，而不插入旧版透明占位图。
+        self.navigationBar.translucent = YES;
+        [self.navigationBar _reloadBarTransparent:transparent];
+        return;
+    }
     if(transparent == self.navigationBarTransparent)
         return;
     

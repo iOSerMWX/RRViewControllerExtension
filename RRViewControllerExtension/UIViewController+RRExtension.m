@@ -117,35 +117,40 @@ __weak UIView *sMemleakWarningView;
 }
 
 #pragma mark- global setting
-+(UIImage *)navigationBackBarButtonItemImage
-{
-    if(!backIndicatorImage)
-    {
-        CGRect rect = CGRectMake(0, 0, 24, 44);
-        CGFloat yInset = 14;
-        CGFloat xOrg = 1;
-        CGFloat xLen = 8;
-        UIGraphicsBeginImageContextWithOptions(rect.size, NO, [UIScreen mainScreen].scale);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetStrokeColorWithColor(context,[UIColor blackColor].CGColor);
-        CGContextSetLineJoin(context, kCGLineJoinRound);
-        CGContextSetLineCap(context, kCGLineCapRound);
-        CGContextSetLineWidth(context, 2.0);
-        CGMutablePathRef path = CGPathCreateMutable();
-        CGPathMoveToPoint(path, NULL, xOrg+xLen, yInset);
-        CGPathAddLineToPoint(path, NULL, xOrg, rect.size.height/2);
-        CGPathAddLineToPoint(path, NULL, xOrg+xLen, rect.size.height-yInset);
-        CGContextAddPath(context, path);
-        CGContextStrokePath(context);
-        backIndicatorImage = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-        CGPathRelease(path);
++(UIImage *)navigationBackBarButtonItemImage {
+    if(!backIndicatorImage) {
+        if (@available(iOS 26.0, *)) {
+            // 旧版箭头画布含 44pt 高度和左侧偏移，新栏使用系统符号保持玻璃按钮居中；显式定制图片仍优先。
+            backIndicatorImage = [UIImage systemImageNamed:@"chevron.backward"];
+        } else {
+            CGRect rect = CGRectMake(0, 0, 24, 44);
+            CGFloat yInset = 14;
+            CGFloat xOrg = 1;
+            CGFloat xLen = 8;
+            UIGraphicsBeginImageContextWithOptions(rect.size, NO, [UIScreen mainScreen].scale);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetStrokeColorWithColor(context,[UIColor blackColor].CGColor);
+            CGContextSetLineJoin(context, kCGLineJoinRound);
+            CGContextSetLineCap(context, kCGLineCapRound);
+            CGContextSetLineWidth(context, 2.0);
+            CGMutablePathRef path = CGPathCreateMutable();
+            CGPathMoveToPoint(path, NULL, xOrg+xLen, yInset);
+            CGPathAddLineToPoint(path, NULL, xOrg, rect.size.height/2);
+            CGPathAddLineToPoint(path, NULL, xOrg+xLen, rect.size.height-yInset);
+            CGContextAddPath(context, path);
+            CGContextStrokePath(context);
+            backIndicatorImage = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
+            CGPathRelease(path);
 
-        if (@available(iOS 10.0, *)) {
-        UIView *v = [UIView new];
-        if(v.effectiveUserInterfaceLayoutDirection == UIUserInterfaceLayoutDirectionRightToLeft)
-            backIndicatorImage = [UIImage imageWithCGImage:backIndicatorImage.CGImage scale:backIndicatorImage.scale orientation:UIImageOrientationDown ];
+            if (@available(iOS 10.0, *)) {
+                UIView *v = [UIView new];
+                if(v.effectiveUserInterfaceLayoutDirection == UIUserInterfaceLayoutDirectionRightToLeft) {
+                    backIndicatorImage = [UIImage imageWithCGImage:backIndicatorImage.CGImage scale:backIndicatorImage.scale orientation:UIImageOrientationDown ];
+                }
+            }
         }
+        
   
     }
     return backIndicatorImage;
@@ -366,6 +371,15 @@ static char kAssociatedObjectKey_overtyleSettingsByYourSelf;
     
     //set navigation bar title attributed
     [self.navigationController.navigationBar reloadBarTitleTextAttributes:[self preferredNavigationTitleTextAttributes]];
+
+    if (@available(iOS 26.0, *)) {
+        // Item 外观优先于共享导航栏；同步最终配置，避免旧 Item 背景遮住头图或阻止上滑后恢复。
+        UINavigationBarAppearance *appearance = [self.navigationController.navigationBar.standardAppearance copy];
+        self.navigationItem.standardAppearance = appearance;
+        self.navigationItem.scrollEdgeAppearance = appearance;
+        self.navigationItem.compactAppearance = appearance;
+        self.navigationItem.compactScrollEdgeAppearance = appearance;
+    }
     
 }
 
