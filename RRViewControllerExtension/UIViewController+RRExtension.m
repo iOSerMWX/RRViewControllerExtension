@@ -25,6 +25,81 @@ __weak UIView *sMemleakWarningView;
 #endif
 
 
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+@interface RRNavigationScrollEdgeState : NSObject
+@property (nonatomic, weak) UIScrollView *scrollView;
+@property (nonatomic, assign) BOOL originalHidden;
+@end
+
+@implementation RRNavigationScrollEdgeState
+@end
+
+// 不递归进入自定义组件；复杂页面通过 UIKit 的公开接口明确指定列表。
+static UIScrollView *RRNavigationContentScrollView(UIViewController *controller) API_AVAILABLE(ios(26.0));
+static UIScrollView *RRNavigationContentScrollView(UIViewController *controller)
+{
+    UIScrollView *explicitScrollView = [controller contentScrollViewForEdge:NSDirectionalRectEdgeTop];
+    if (explicitScrollView) {
+        return explicitScrollView;
+    }
+    UIView *rootView = controller.viewIfLoaded;
+    if (!rootView || rootView.hidden || rootView.alpha <= 0.01) {
+        return nil;
+    }
+    if ([rootView isKindOfClass:UIScrollView.class]) {
+        return (UIScrollView *)rootView;
+    }
+    UIScrollView *candidate = nil;
+    for (UIView *view in rootView.subviews) {
+        if (view.hidden || view.alpha <= 0.01 || ![view isKindOfClass:UIScrollView.class]) {
+            continue;
+        }
+        UIResponder *responder = view.nextResponder;
+        if ([responder isKindOfClass:UIViewController.class] && responder != controller) {
+            continue;
+        }
+        if (candidate) {
+            return nil;
+        }
+        candidate = (UIScrollView *)view;
+    }
+    return candidate;
+}
+
+static void RRUpdateNavigationScrollEdge(UIViewController *controller, BOOL suppress) API_AVAILABLE(ios(26.0));
+static void RRUpdateNavigationScrollEdge(UIViewController *controller, BOOL suppress)
+{
+    static char stateKey;
+    static char scrollOwnerKey;
+    RRNavigationScrollEdgeState *state = objc_getAssociatedObject(controller, &stateKey);
+    UIScrollView *scrollView = suppress ? RRNavigationContentScrollView(controller) : nil;
+
+    // 列表替换、候选变得不明确或退出透明状态时，恢复之前接管的列表。
+    if (state && (!scrollView || state.scrollView != scrollView)) {
+        UIScrollView *previousScrollView = state.scrollView;
+        if (previousScrollView && objc_getAssociatedObject(previousScrollView, &scrollOwnerKey) == state) {
+            previousScrollView.topEdgeEffect.hidden = state.originalHidden;
+            objc_setAssociatedObject(previousScrollView, &scrollOwnerKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        }
+        objc_setAssociatedObject(controller, &stateKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        state = nil;
+    }
+    if (!scrollView) {
+        return;
+    }
+    RRNavigationScrollEdgeState *currentOwner = objc_getAssociatedObject(scrollView, &scrollOwnerKey);
+    if (!state || currentOwner != state) {
+        state = [[RRNavigationScrollEdgeState alloc] init];
+        state.scrollView = scrollView;
+        // 父子控制器显式关联同一列表时传递原值，旧控制器退出不能撤销新控制器的接管。
+        state.originalHidden = currentOwner ? currentOwner.originalHidden : scrollView.topEdgeEffect.hidden;
+        objc_setAssociatedObject(controller, &stateKey, state, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        objc_setAssociatedObject(scrollView, &scrollOwnerKey, state, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    scrollView.topEdgeEffect.hidden = YES;
+}
+#endif
+
 @implementation UIViewController (RRExtension)
 
 //2022.09.14 move from +(void)initialize since ios16
@@ -243,6 +318,12 @@ __weak UIView *sMemleakWarningView;
     [self exchg_viewDidDisappear:animated];
     
     self.rr_visibleState = RRViewControllerDidDisappear;
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+    if (@available(iOS 26.0, *)) {
+        // 等页面实际消失再恢复，避免交互返回尚未完成时透明页面闪出边缘效果。
+        RRUpdateNavigationScrollEdge(self, NO);
+    }
+#endif
     
 //    objc_setAssociatedObject(self, @"viewAppear", @NO, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [self invokeAfterHookForLifecycle:RRViewControllerLifeCycleViewDidDisappear animated:animated];
@@ -280,6 +361,13 @@ static char kAssociatedObjectKey_visibleState;
 static char kAssociatedObjectKey_overtyleSettingsByYourSelf;
 -(void)setRr_overtyleSettingsByYourSelf:(BOOL)rr_overtyleSettingsByYourSelf {
     objc_setAssociatedObject(self, &kAssociatedObjectKey_overtyleSettingsByYourSelf, @(rr_overtyleSettingsByYourSelf), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+    if (@available(iOS 26.0, *)) {
+        if (rr_overtyleSettingsByYourSelf) {
+            RRUpdateNavigationScrollEdge(self, NO);
+        }
+    }
+#endif
 }
 -(BOOL)rr_overtyleSettingsByYourSelf {
     return [(objc_getAssociatedObject(self, &kAssociatedObjectKey_overtyleSettingsByYourSelf)) boolValue];
@@ -321,15 +409,18 @@ static char kAssociatedObjectKey_overtyleSettingsByYourSelf;
 
 -(void)updateNavigationAppearance:(BOOL)animated
 {
-    if(!self.navigationController || !self.isViewLoaded)
-        return;
-    
-    if([self.navigationController isKindOfClass:[UIImagePickerController class]])
-        return;
-    if ([self overtyleSettingsByYourSelf] || [self rr_overtyleSettingsByYourSelf]) {
+    BOOL managesAppearance = self.navigationController && self.isViewLoaded &&
+        ![self.navigationController isKindOfClass:UIImagePickerController.class] &&
+        ![self overtyleSettingsByYourSelf] && !self.rr_overtyleSettingsByYourSelf;
+    if (!managesAppearance) {
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+        if (@available(iOS 26.0, *)) {
+            RRUpdateNavigationScrollEdge(self, NO);
+        }
+#endif
         return;
     }
-    
+
     BOOL hidden = [self prefersNavigationBarHidden];
 
     if(hidden)
@@ -351,6 +442,15 @@ static char kAssociatedObjectKey_overtyleSettingsByYourSelf;
   //  [self showNavigationBackItem:![self inter_prefersNavigationBackItemHidden]];
     
     BOOL transparent = [self prefersNavigationBarTransparent];
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+    if (@available(iOS 26.0, *)) {
+        // 转场中的源页面保持当前效果，真正退出时由 viewDidDisappear 统一恢复。
+        if (self.rr_visibleState != RRViewControllerWillDisappear) {
+            BOOL active = self.rr_visibleState != RRViewControllerDidDisappear;
+            RRUpdateNavigationScrollEdge(self, transparent && !hidden && active);
+        }
+    }
+#endif
     [self.navigationController setNavigationBarTransparent:transparent];
     if(!transparent)
     {

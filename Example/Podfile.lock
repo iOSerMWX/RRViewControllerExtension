@@ -1,16 +1,23 @@
 PODS:
-  - RRViewControllerExtension (3.2.0)
+  - Masonry (1.1.0)
+  - RRViewControllerExtension (3.2.1)
 
 DEPENDENCIES:
+  - Masonry (~> 1.1)
   - RRViewControllerExtension (from `../`)
+
+SPEC REPOS:
+  trunk:
+    - Masonry
 
 EXTERNAL SOURCES:
   RRViewControllerExtension:
     :path: "../"
 
 SPEC CHECKSUMS:
-  RRViewControllerExtension: fe7d20a8289bb02f1715778fbebda7e3313f9636
+  Masonry: 678fab65091a9290e40e2832a55e7ab731aad201
+  RRViewControllerExtension: 14eba7e2976679864a901e90c8a8348e0ddd4b04
 
-PODFILE CHECKSUM: 8f554c242292946d4fca7f60dcb8c4230a4f8777
+PODFILE CHECKSUM: b83e9d0905677b199ef8bdb83427281485151c2d
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2

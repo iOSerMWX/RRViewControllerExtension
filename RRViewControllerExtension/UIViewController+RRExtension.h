@@ -65,6 +65,10 @@ typedef void (^RRViewControllerLifecycleHookBlock) (UIViewController *viewContro
 -(BOOL)prefersNavigationBarHidden;
 
 //default returns NO, you can override this method to return different values according to the current status of the viewcontroller.
+// iOS 26+ 同步隐藏顶部滚动边缘效果，优先采用 contentScrollViewForEdge: 指定的列表。
+// 未指定时仅识别根滚动视图或直接子视图中唯一的可见列表，不递归进入自定义组件或子控制器。
+// 多列表、嵌套滚动或子控制器场景应通过 setContentScrollView:forEdge: 明确指定 Top 列表。
+// 接管期间由库管理 hidden；退出透明、页面消失或放弃外观管理时恢复接管前的值。
 -(BOOL)prefersNavigationBarTransparent;
 
 -(nullable UIColor *)preferredNavatationBarColor;
@@ -86,6 +90,7 @@ typedef void (^RRViewControllerLifecycleHookBlock) (UIViewController *viewContro
 #pragma mark-
 
 // force update,call this method whenever the return values for the view controller's navigation appearance methods should change.
+// 必须在主线程调用；动态添加、替换列表或改变候选列表可见性后也需调用，以重新识别顶部滚动边缘效果的归属。
 -(void)updateNavigationAppearance:(BOOL)animated;
 
 //show/hide the navigation back buttonItem on left of the navigation bar

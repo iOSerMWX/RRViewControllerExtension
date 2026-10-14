@@ -25,6 +25,9 @@
 		9FF94A2421536CFA00FC8F22 /* DEMO_normalMemoryLeakViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 9FF94A2321536CFA00FC8F22 /* DEMO_normalMemoryLeakViewController.xib */; };
 		9FF94A562154FCA000FC8F22 /* SwitchableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9FF94A552154FC9F00FC8F22 /* SwitchableViewController.m */; };
 		B15E7EF9277995800065BF50 /* StatisticsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = B15E7EF8277995800065BF50 /* StatisticsViewController.m */; };
+		DA571CFB30A1000100000003 /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = DA571CFB30A1000100000002 /* SceneDelegate.m */; };
+		DA571CFB30A1000200000003 /* DEMO_ScrollNaviBarViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = DA571CFB30A1000200000002 /* DEMO_ScrollNaviBarViewController.m */; };
+		DAF1124A307F88E600556BFB /* bg_activity_cover@2x.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DAF11249307F88E600556BFB /* bg_activity_cover@2x.jpg */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -60,6 +63,11 @@
 		9FF94A552154FC9F00FC8F22 /* SwitchableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SwitchableViewController.m; sourceTree = "<group>"; };
 		B15E7EF7277995800065BF50 /* StatisticsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StatisticsViewController.h; sourceTree = "<group>"; };
 		B15E7EF8277995800065BF50 /* StatisticsViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = StatisticsViewController.m; sourceTree = "<group>"; };
+		DA571CFB30A1000100000001 /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
+		DA571CFB30A1000100000002 /* SceneDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SceneDelegate.m; sourceTree = "<group>"; };
+		DA571CFB30A1000200000001 /* DEMO_ScrollNaviBarViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DEMO_ScrollNaviBarViewController.h; sourceTree = "<group>"; };
+		DA571CFB30A1000200000002 /* DEMO_ScrollNaviBarViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DEMO_ScrollNaviBarViewController.m; sourceTree = "<group>"; };
+		DAF11249307F88E600556BFB /* bg_activity_cover@2x.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "bg_activity_cover@2x.jpg"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,7 +88,6 @@
 				0F6EE04C246680CEDFC15A5F /* Pods-RRUIViewControllerDemo.debug.xcconfig */,
 				2024C47B10E3248B9B016B4E /* Pods-RRUIViewControllerDemo.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -107,11 +114,14 @@
 			children = (
 				9F73EAF42150ECCE0046B7D2 /* AppDelegate.h */,
 				9F73EAF52150ECCE0046B7D2 /* AppDelegate.m */,
+				DA571CFB30A1000100000001 /* SceneDelegate.h */,
+				DA571CFB30A1000100000002 /* SceneDelegate.m */,
 				9FEF4CBC2150EE93009292EC /* ViewControllers */,
 				9F73EAFD2150ECCE0046B7D2 /* Assets.xcassets */,
 				9F73EAFF2150ECCE0046B7D2 /* LaunchScreen.storyboard */,
 				9F73EB022150ECCE0046B7D2 /* Info.plist */,
 				9F73EB402152242E0046B7D2 /* icon_apple@2x.png */,
+				DAF11249307F88E600556BFB /* bg_activity_cover@2x.jpg */,
 				9F73EB352151018C0046B7D2 /* cusNavigationBar@2x.png */,
 				9F73EB032150ECCE0046B7D2 /* main.m */,
 			);
@@ -132,6 +142,8 @@
 			isa = PBXGroup;
 			children = (
 				9FEF4CC02150F0EC009292EC /* commView */,
+				DA571CFB30A1000200000001 /* DEMO_ScrollNaviBarViewController.h */,
+				DA571CFB30A1000200000002 /* DEMO_ScrollNaviBarViewController.m */,
 				9FEF4CBD2150EEC6009292EC /* DEMO_normalMemoryLeakViewController.h */,
 				9FEF4CBE2150EEC6009292EC /* DEMO_normalMemoryLeakViewController.m */,
 				9FF94A2321536CFA00FC8F22 /* DEMO_normalMemoryLeakViewController.xib */,
@@ -233,6 +245,7 @@
 				9F73EB362151018C0046B7D2 /* cusNavigationBar@2x.png in Resources */,
 				9F73EB012150ECCE0046B7D2 /* LaunchScreen.storyboard in Resources */,
 				9FEF4CC52150F164009292EC /* CommView.xib in Resources */,
+				DAF1124A307F88E600556BFB /* bg_activity_cover@2x.jpg in Resources */,
 				9FEF4CCA2150F4B8009292EC /* DynamicConfigViewController.xib in Resources */,
 				9FF94A2421536CFA00FC8F22 /* DEMO_normalMemoryLeakViewController.xib in Resources */,
 				9F73EAFE2150ECCE0046B7D2 /* Assets.xcassets in Resources */,
@@ -249,10 +262,12 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-RRUIViewControllerDemo/Pods-RRUIViewControllerDemo-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/Masonry/Masonry.framework",
 				"${BUILT_PRODUCTS_DIR}/RRViewControllerExtension/RRViewControllerExtension.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Masonry.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RRViewControllerExtension.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -295,6 +310,8 @@
 				9FEF4CBF2150EEC6009292EC /* DEMO_normalMemoryLeakViewController.m in Sources */,
 				9FCFF6C521C0B03500F92633 /* DEMO_TransparentNaviBarViewController.m in Sources */,
 				9F73EAF62150ECCE0046B7D2 /* AppDelegate.m in Sources */,
+				DA571CFB30A1000200000003 /* DEMO_ScrollNaviBarViewController.m in Sources */,
+				DA571CFB30A1000100000003 /* SceneDelegate.m in Sources */,
 				9F73EB34215100930046B7D2 /* DEMO_ImageNaviBarViewController.m in Sources */,
 				B15E7EF9277995800065BF50 /* StatisticsViewController.m in Sources */,
 				9FEF4CC92150F4B8009292EC /* DynamicConfigViewController.m in Sources */,
@@ -429,11 +446,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 6575PQUVHG;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "$(SRCROOT)/RRUIViewControllerDemo/Prefix.pch";
 				INFOPLIST_FILE = RRUIViewControllerDemo/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.2blulu.rrvc.demo.RRUIViewControllerDemo;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tblulu.rrvc.demo.RRUIViewControllerDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -445,11 +464,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 6575PQUVHG;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "$(SRCROOT)/RRUIViewControllerDemo/Prefix.pch";
 				INFOPLIST_FILE = RRUIViewControllerDemo/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.2blulu.rrvc.demo.RRUIViewControllerDemo;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tblulu.rrvc.demo.RRUIViewControllerDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

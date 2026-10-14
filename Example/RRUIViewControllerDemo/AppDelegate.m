@@ -8,8 +8,8 @@
 
 #import "AppDelegate.h"
 #import "RRViewControllerExtension.h"
-#import "DEMO_normalMemoryLeakViewController.h"
 #import "CommView.h"
+#import "DEMO_ScrollNaviBarViewController.h"
 @interface AppDelegate ()
 
 @end
@@ -26,20 +26,13 @@
     [[UINavigationBar appearance] setTitleTextAttributes:dict];
    // [[UIView appearance] setBackgroundColor:[UIColor whiteColor]];
     
-    DEMO_normalMemoryLeakViewController *rtVc = [[DEMO_normalMemoryLeakViewController alloc] init];
-    UINavigationController *navi = [[UINavigationController alloc] initWithRootViewController:rtVc];
-    
-    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    self.window.backgroundColor = [UIColor whiteColor];
-    [self.window makeKeyAndVisible];
-    self.window.rootViewController = navi;
-    
-    
     [UIViewController hookLifecycle:RRViewControllerLifeCycleViewDidLoad onTiming:RRMethodInsertTimingAfter withBlock:^(UIViewController * _Nonnull viewController, BOOL animated) {
         
         NSLog(@"%@ viewDidLoad",NSStringFromClass([viewController class]));
 
-        if([NSStringFromClass([viewController class]) hasPrefix:@"DEMO_"])
+        // 滚动示例需要完整的列表交互区域，避免公共演示浮层遮挡列表。
+        if([NSStringFromClass([viewController class]) hasPrefix:@"DEMO_"] &&
+           ![viewController isKindOfClass:DEMO_ScrollNaviBarViewController.class])
         {
 //            viewController.view.backgroundColor = [UIColor whiteColor];
 //            if(!viewController.title)

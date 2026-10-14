@@ -13,6 +13,7 @@
 #import "DEMO_ImageNaviBarViewController.h"
 #import "DEMO_normalMemoryLeakViewController.h"
 #import <MessageUI/MessageUI.h>
+#import "DEMO_ScrollNaviBarViewController.h"
 
 //only for memmory leak debug 仅用于vc内存泄露调试
 NSMutableArray *sVcMemLeakDebugArray;
@@ -41,8 +42,15 @@ static int sCreatedCount;
     [super viewDidLoad];
 
     [sVcMemLeakDebugArray addObject:self];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"滚动导航栏" style:UIBarButtonItemStylePlain target:self action:@selector(showScrollNavigationDemo)];
 }
 
+
+- (void)showScrollNavigationDemo
+{
+    DEMO_ScrollNaviBarViewController *controller = [[DEMO_ScrollNaviBarViewController alloc] initWithStyle:UITableViewStylePlain];
+    [self.navigationController pushViewController:controller animated:YES];
+}
 
 -(BOOL)viewControllerShouldDismiss
 {
