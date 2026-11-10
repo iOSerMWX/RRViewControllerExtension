@@ -375,13 +375,10 @@ RR_OverrideImplementation(Class targetClass, SEL targetSelector, id (^implementa
 }
 
 - (void)setNavigationBarTransparent:(BOOL)transparent {
-    UIViewController *viewController = self.topViewController;
-    id owner = viewController.navigationItem ?: (id)self.navigationBar;
-    NSNumber *current = objc_getAssociatedObject(owner, &kRRNavigationTransparency);
-    if (current && current.boolValue == transparent) {
-        return;
-    }
-    [self rr_applyNavigationAppearanceForViewController:viewController transparent:transparent titleTextAttributes:nil];
+    // reloadBarBackgroundImage: 可以单独改写 Item，透明标记只记录上次请求。
+    [self rr_applyNavigationAppearanceForViewController:self.topViewController
+                                             transparent:transparent
+                                     titleTextAttributes:nil];
 }
 
 - (BOOL)isNavigationBarTransparent {
