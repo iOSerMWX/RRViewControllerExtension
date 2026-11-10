@@ -5,6 +5,12 @@
 #import "UIViewController+RRExtension.h"
 #import <objc/runtime.h>
 
+@interface UINavigationController (RRNavigationAppearance)
+- (void)rr_applyNavigationAppearanceForViewController:(nullable UIViewController *)viewController
+                                           transparent:(BOOL)transparent
+                                   titleTextAttributes:(nullable NSDictionary<NSAttributedStringKey, id> *)titleTextAttributes;
+@end
+
 
 //RRStatisticBridge只是用来
 @interface UIViewController (RRStatisticBridge)
@@ -438,49 +444,22 @@ static char kAssociatedObjectKey_overtyleSettingsByYourSelf;
 #pragma clang diagnostic pop
     }
     
-    //only set in viewDidLoad
-  //  [self showNavigationBackItem:![self inter_prefersNavigationBackItemHidden]];
-    
-    BOOL transparent = [self prefersNavigationBarTransparent];
+    self.navigationController.navigationBar.tintColor = [self preferredNavigationItemColor];
+    [self.navigationController rr_applyNavigationAppearanceForViewController:self
+                                                                  transparent:[self prefersNavigationBarTransparent]
+                                                          titleTextAttributes:[self preferredNavigationTitleTextAttributes] ?: @{}];
+}
+
+- (void)rr_updateNavigationScrollEdgeForTransparentBar:(BOOL)transparent {
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
     if (@available(iOS 26.0, *)) {
-        // 转场中的源页面保持当前效果，真正退出时由 viewDidDisappear 统一恢复。
+        // 交互返回取消时，源页面的滚动边缘效果仍归当前页面管理。
         if (self.rr_visibleState != RRViewControllerWillDisappear) {
             BOOL active = self.rr_visibleState != RRViewControllerDidDisappear;
-            RRUpdateNavigationScrollEdge(self, transparent && !hidden && active);
+            RRUpdateNavigationScrollEdge(self, transparent && !self.navigationController.navigationBarHidden && active);
         }
     }
 #endif
-    [self.navigationController setNavigationBarTransparent:transparent];
-    if(!transparent)
-    {
-//#warning 这里是否欠妥，如果设置为nil的话，是不是把上次设定的默认图片也覆盖了
-        //set navigation bar background image
-        UIImage *bgImage = [self preferredNavigationBarBackgroundImage];
-        [self.navigationController.navigationBar reloadBarBackgroundImage:bgImage];
-        [self.navigationController.navigationBar reloadBarShadowImage:nil];
-    }
-    
-    
-    //set navigation bar tintColor
-    [self.navigationController.navigationBar reloadBarBackgroundColor:[self preferredNavatationBarColor]];
-    
-    //set navigation bar item tintColor
-    UIColor *barItemTintColor = [self preferredNavigationItemColor];
-    [self.navigationController.navigationBar setTintColor:barItemTintColor];
-    
-    //set navigation bar title attributed
-    [self.navigationController.navigationBar reloadBarTitleTextAttributes:[self preferredNavigationTitleTextAttributes]];
-
-    if (@available(iOS 26.0, *)) {
-        // Item 外观优先于共享导航栏；同步最终配置，避免旧 Item 背景遮住头图或阻止上滑后恢复。
-        UINavigationBarAppearance *appearance = [self.navigationController.navigationBar.standardAppearance copy];
-        self.navigationItem.standardAppearance = appearance;
-        self.navigationItem.scrollEdgeAppearance = appearance;
-        self.navigationItem.compactAppearance = appearance;
-        self.navigationItem.compactScrollEdgeAppearance = appearance;
-    }
-    
 }
 
 
@@ -525,6 +504,14 @@ static char kAssociatedObjectKey_overtyleSettingsByYourSelf;
         dic = [[UINavigationBar appearance] titleTextAttributes];
     
     return dic;
+}
+
+- (UIBlurEffect *)preferredNavigationBarBackgroundEffect {
+    return nil;
+}
+
+- (UIColor *)preferredNavigationBarShadowColor {
+    return nil;
 }
 
 -(UIImage *)preferredNavigationBarBackgroundImage

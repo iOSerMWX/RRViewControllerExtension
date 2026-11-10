@@ -74,6 +74,10 @@ typedef void (^RRViewControllerLifecycleHookBlock) (UIViewController *viewContro
 -(nullable UIColor *)preferredNavatationBarColor;
 -(nullable UIColor *)preferredNavigationItemColor;
 -(nullable UIImage *)preferredNavigationBarBackgroundImage;
+// 仅在非透明且无背景图时叠加磨砂，页面可以与半透明底色组合。
+- (nullable UIBlurEffect *)preferredNavigationBarBackgroundEffect;
+// 非透明背景的分割线颜色，nil 时隐藏。
+- (nullable UIColor *)preferredNavigationBarShadowColor;
 -(nullable NSDictionary *)preferredNavigationTitleTextAttributes;
 
 /*

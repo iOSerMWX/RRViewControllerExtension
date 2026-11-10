@@ -3,7 +3,124 @@
 #import <Masonry/Masonry.h>
 static NSString * const kCellIdentifier = @"ScrollNavigationCell";
 
-@interface DEMO_ScrollNaviBarViewController () <UITableViewDataSource, UITableViewDelegate>
+@interface DEMO_ScrollNavigationPopoverViewController : UIViewController
+@end
+
+@implementation DEMO_ScrollNavigationPopoverViewController
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+
+    // 内容保持透明，便于观察 UIPopoverPresentationController 自带的背景材质、圆角和箭头。
+    self.view.backgroundColor = UIColor.clearColor;
+
+    UILabel *titleLabel = [[UILabel alloc] init];
+    titleLabel.text = @"分享至";
+    titleLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
+    titleLabel.textColor = UIColor.secondaryLabelColor;
+    titleLabel.adjustsFontForContentSizeCategory = YES;
+
+    NSArray<NSString *> *shareTitles = @[@"微信", @"朋友圈", @"QQ", @"QQ空间"];
+    NSArray<NSString *> *shareSymbols = @[@"message.fill", @"camera.aperture", @"bell.fill", @"star.fill"];
+    NSArray<UIColor *> *shareColors = @[
+        UIColor.systemGreenColor, UIColor.systemOrangeColor,
+        UIColor.systemBlueColor, UIColor.systemYellowColor
+    ];
+    UIStackView *shareStack = [[UIStackView alloc] init];
+    shareStack.axis = UILayoutConstraintAxisHorizontal;
+    shareStack.distribution = UIStackViewDistributionFillEqually;
+    shareStack.spacing = 4.0;
+
+    for (NSUInteger index = 0; index < shareTitles.count; index++) {
+        UIButton *button = [self buttonWithTitle:shareTitles[index]
+                                        symbol:shareSymbols[index]
+                                     shareItem:YES
+                                         color:shareColors[index]];
+        [shareStack addArrangedSubview:button];
+    }
+
+    UIView *separator = [[UIView alloc] init];
+    separator.backgroundColor = UIColor.separatorColor;
+    [separator mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.height.mas_equalTo(0.5);
+    }];
+
+    UIStackView *actionStack = [[UIStackView alloc] init];
+    actionStack.axis = UILayoutConstraintAxisVertical;
+    NSArray<NSString *> *actionTitles = @[@"关注", @"复制链接", @"举报"];
+    NSArray<NSString *> *actionSymbols = @[@"person.badge.plus", @"link", @"exclamationmark.triangle"];
+    for (NSUInteger index = 0; index < actionTitles.count; index++) {
+        UIButton *button = [self buttonWithTitle:actionTitles[index]
+                                        symbol:actionSymbols[index]
+                                     shareItem:NO
+                                         color:UIColor.labelColor];
+        [actionStack addArrangedSubview:button];
+    }
+
+    UIStackView *contentStack = [[UIStackView alloc] initWithArrangedSubviews:@[
+        titleLabel, shareStack, separator, actionStack
+    ]];
+    contentStack.axis = UILayoutConstraintAxisVertical;
+    contentStack.spacing = 12.0;
+    [self.view addSubview:contentStack];
+    // 箭头一侧由系统提供安全区，内容约束到安全区以避免与箭头重叠。
+    [contentStack mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.view.mas_safeAreaLayoutGuideTop).offset(16.0);
+        make.left.equalTo(self.view.mas_safeAreaLayoutGuideLeft).offset(16.0);
+        make.bottom.equalTo(self.view.mas_safeAreaLayoutGuideBottom).offset(-16.0);
+        make.right.equalTo(self.view.mas_safeAreaLayoutGuideRight).offset(-16.0);
+    }];
+
+    CGFloat width = self.preferredContentSize.width;
+    CGSize contentSize = [contentStack systemLayoutSizeFittingSize:CGSizeMake(width - 32.0, UILayoutFittingCompressedSize.height)
+                                   withHorizontalFittingPriority:UILayoutPriorityRequired
+                                         verticalFittingPriority:UILayoutPriorityFittingSizeLevel];
+    self.preferredContentSize = CGSizeMake(width, ceil(contentSize.height) + 32.0);
+}
+
+- (UIButton *)buttonWithTitle:(NSString *)title
+                       symbol:(NSString *)symbol
+                    shareItem:(BOOL)shareItem
+                        color:(UIColor *)color
+{
+    UIButtonConfiguration *configuration = [UIButtonConfiguration plainButtonConfiguration];
+    configuration.image = [UIImage systemImageNamed:symbol];
+    configuration.preferredSymbolConfigurationForImage = [UIImageSymbolConfiguration configurationWithPointSize:shareItem ? 32.0 : 26.0
+                                                                                                        weight:UIImageSymbolWeightRegular];
+    configuration.attributedTitle = [[NSAttributedString alloc] initWithString:title attributes:@{
+        NSFontAttributeName: [UIFont preferredFontForTextStyle:shareItem ? UIFontTextStyleCaption1 : UIFontTextStyleTitle2]
+    }];
+    configuration.baseForegroundColor = UIColor.labelColor;
+    configuration.imageColorTransformer = ^UIColor *(UIColor *incomingColor) {
+        return color;
+    };
+    configuration.imagePlacement = shareItem ? NSDirectionalRectEdgeTop : NSDirectionalRectEdgeLeading;
+    configuration.imagePadding = shareItem ? 8.0 : 16.0;
+    configuration.contentInsets = shareItem ? NSDirectionalEdgeInsetsMake(8, 0, 8, 0) : NSDirectionalEdgeInsetsMake(12, 8, 12, 8);
+
+    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+    button.configuration = configuration;
+    button.contentHorizontalAlignment = shareItem ? UIControlContentHorizontalAlignmentCenter : UIControlContentHorizontalAlignmentLeading;
+    button.titleLabel.adjustsFontForContentSizeCategory = YES;
+    button.accessibilityLabel = title;
+    [button addTarget:self action:@selector(didSelectPopoverItem:) forControlEvents:UIControlEventTouchUpInside];
+    [button mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.height.mas_greaterThanOrEqualTo(shareItem ? 80.0 : 56.0);
+    }];
+    return button;
+}
+
+- (void)didSelectPopoverItem:(UIButton *)sender
+{
+    // Demo 仅反馈选中项，避免接入分享 SDK 或修改真实业务状态。
+    NSLog(@"Popover 选中：%@", sender.accessibilityLabel);
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+@end
+
+@interface DEMO_ScrollNaviBarViewController () <UITableViewDataSource, UITableViewDelegate, UIPopoverPresentationControllerDelegate>
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, assign) CGFloat headerImageAspectRatio;
 @property (nonatomic, assign) UITableViewStyle tableViewStyle;
@@ -71,11 +188,11 @@ static NSString * const kCellIdentifier = @"ScrollNavigationCell";
         self.tableView.tableHeaderView = headerView;
     }
 
-    UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
-    [btn setTitle:@"Next" forState:UIControlStateNormal];
-    [btn sizeToFit];
-    [btn addTarget:self action:@selector(_pushNext:) forControlEvents:UIControlEventTouchUpInside];
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:btn];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"ellipsis.circle"]
+                                                                         style:UIBarButtonItemStylePlain
+                                                                        target:self
+                                                                        action:@selector(showPopover:)];
+    self.navigationItem.rightBarButtonItem.accessibilityLabel = @"更多操作";
 }
 - (void)viewDidLayoutSubviews
 {
@@ -99,9 +216,32 @@ static NSString * const kCellIdentifier = @"ScrollNavigationCell";
     [self updateNavigationBarForScrollView:self.tableView];
 }
 
--(void)_pushNext:(UIButton*)btn {
-    DEMO_ScrollNaviBarViewController *controller = [[DEMO_ScrollNaviBarViewController alloc] initWithStyle:UITableViewStyleInsetGrouped];
-    [self.navigationController pushViewController:controller animated:YES];
+- (void)showPopover:(UIBarButtonItem *)sender
+{
+    if (self.presentedViewController != nil) {
+        return;
+    }
+
+    DEMO_ScrollNavigationPopoverViewController *controller = [[DEMO_ScrollNavigationPopoverViewController alloc] init];
+    controller.modalPresentationStyle = UIModalPresentationPopover;
+    controller.preferredContentSize = CGSizeMake(MIN(360.0, CGRectGetWidth(self.view.bounds) - 32.0), 360.0);
+
+    UIPopoverPresentationController *popover = controller.popoverPresentationController;
+    popover.barButtonItem = sender;
+    popover.delegate = self;
+    [self presentViewController:controller animated:YES completion:nil];
+}
+
+- (UIModalPresentationStyle)adaptivePresentationStyleForPresentationController:(UIPresentationController *)controller
+{
+    // iPhone 的紧凑宽度默认会转为 Sheet；返回 None 才能直接观察 Popover 效果。
+    return UIModalPresentationNone;
+}
+
+- (UIModalPresentationStyle)adaptivePresentationStyleForPresentationController:(UIPresentationController *)controller
+                                                            traitCollection:(UITraitCollection *)traitCollection
+{
+    return UIModalPresentationNone;
 }
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {

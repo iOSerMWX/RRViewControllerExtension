@@ -23,6 +23,9 @@ typedef void (^TransitionCompletionCallBackType)(void);
 
 @property (nonatomic, getter = isNavigationBarTransparent) BOOL navigationBarTransparent;
 
+// 由宿主主题在主线程提供，单个导航控制器和页面可以覆盖。
++ (void)rr_setDefaultNavigationBarBackgroundColor:(nullable UIColor *)color;
+
 // set default navigation bar appearance
 @property (nonatomic) BOOL defaultNavigationBarHidden;
 @property (nonatomic) BOOL defaultNavigationBarTransparent;

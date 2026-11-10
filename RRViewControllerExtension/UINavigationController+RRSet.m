@@ -9,22 +9,29 @@
 #import <objc/runtime.h>
 #import "RRViewControllerExtension.h"
 
-static UIImage *sNavigationBarTransparentImage;
+static UIColor *sDefaultNavigationBarBackgroundColor;
+static char kRRNavigationTransparency;
+static char kRRNavigationBackgroundColor;
 
-UIImage * RR_ClearImage(void) {
-    if(!sNavigationBarTransparentImage) {
-        CGRect rect = CGRectMake(0, 0, 1, 1);
-        
-        UIGraphicsBeginImageContext(rect.size);
-        
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context,[UIColor clearColor].CGColor);
-        CGContextFillRect(context, rect);
-        sNavigationBarTransparentImage = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    }
-    return sNavigationBarTransparentImage;
+static UINavigationItem *RRManagedTopNavigationItem(UINavigationBar *bar) {
+    UINavigationItem *item = bar.topItem;
+    return item && objc_getAssociatedObject(item, &kRRNavigationTransparency) ? item : nil;
 }
+
+static void RRApplyNavigationAppearance(UINavigationBar *bar, UINavigationItem *item, UINavigationBarAppearance *appearance) {
+    if (item) {
+        item.standardAppearance = appearance;
+        item.scrollEdgeAppearance = appearance;
+        item.compactAppearance = appearance;
+        item.compactScrollEdgeAppearance = appearance;
+    } else {
+        bar.standardAppearance = appearance;
+        bar.scrollEdgeAppearance = appearance;
+        bar.compactAppearance = appearance;
+        bar.compactScrollEdgeAppearance = appearance;
+    }
+}
+
 /// https://github.com/QMUI/QMUIDemo_iOS/blob/master/QMUI/QMUIKit/QMUICore/QMUIRuntime.h
 ///targetSelector 是否在 targetClass 中
 CG_INLINE BOOL
@@ -86,27 +93,6 @@ RR_OverrideImplementation(Class targetClass, SEL targetSelector, id (^implementa
     return YES;
 }
 
-#pragma mark - UINavigationController (_SetupProperty)
-UIKIT_EXTERN API_AVAILABLE(ios(15.0)) //NS_SWIFT_UI_ACTOR
-/// 其实这些reload方法可以考虑交换Set方法来实现
-@implementation UINavigationBar (_SetupProperty)
-
-static char kAssociatedObjectKey_OrginBackgroundColor_SetupProperty;
--(void)setRr_OrginBackgroundColor:(UIColor*)rr_OrginBackgroundColor {
-    objc_setAssociatedObject(self, &kAssociatedObjectKey_OrginBackgroundColor_SetupProperty, rr_OrginBackgroundColor, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-}
--(UIColor*)rr_OrginBackgroundColor {
-    return objc_getAssociatedObject(self, &kAssociatedObjectKey_OrginBackgroundColor_SetupProperty);
-}
-static char kAssociatedObjectKey_Transparent_SetupProperty;
--(void)setRr_Transparent:(BOOL)rr_Transparent {
-    objc_setAssociatedObject(self, &kAssociatedObjectKey_Transparent_SetupProperty, @(rr_Transparent), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-}
--(BOOL)rr_Transparent {
-    return [objc_getAssociatedObject(self, &kAssociatedObjectKey_Transparent_SetupProperty) boolValue];
-}
-
-@end
 #pragma mark - UINavigationBar+RRSet
 @implementation UINavigationBar (RRSet)
 +(void)load {
@@ -155,105 +141,48 @@ static char kAssociatedObjectKey_Transparent_SetupProperty;
     });
 }
 
--(void)_updateAppearanceBarActionBlock:(void (^ __nullable)(UINavigationBarAppearance *appearance))handler API_AVAILABLE(ios(15.0)) {
-    if (!handler) return;
-    UINavigationBarAppearance *appearance = self.standardAppearance;
-    handler(appearance);
-    self.standardAppearance = appearance;
-    self.scrollEdgeAppearance = appearance;
-    if (@available(iOS 26.0, *)) {
-        self.compactAppearance = appearance;
-        self.compactScrollEdgeAppearance = appearance;
-    }
+// 直接更新背景或分割线时，修改 RR 已接管的 Item，避免被 Item 外观覆盖。
+- (void)rr_updateActiveNavigationAppearance:(void (^)(UINavigationBarAppearance *appearance))update {
+    UINavigationItem *item = RRManagedTopNavigationItem(self);
+    UINavigationBarAppearance *appearance = [(item.standardAppearance ?: self.standardAppearance) copy];
+    update(appearance);
+    RRApplyNavigationAppearance(self, item, appearance);
 }
 
-
--(void)reloadBarBackgroundImage:(nullable UIImage *)img {
-    if (@available(iOS 15.0, *)) {
-        [self _updateAppearanceBarActionBlock:^(UINavigationBarAppearance *appearance) {
-            appearance.backgroundImage = img;
-        }];
-    } else {
-        [self setBackgroundImage:img forBarMetrics:UIBarMetricsDefault];
-    }
-}
--(void)reloadBarShadowImage:(nullable UIImage *)img{
-    if (@available(iOS 26.0, *)) {
-        [self _updateAppearanceBarActionBlock:^(UINavigationBarAppearance *appearance) {
-            appearance.shadowImage = img;
-        }];
-        return;
-    }
-    if (@available(iOS 15.0, *)) {
-        [self _updateAppearanceBarActionBlock:^(UINavigationBarAppearance *appearance) {
-            appearance.shadowImage = img;
-            if (!img) {
-                appearance.shadowImage = RR_ClearImage();
-            }
-        }];
-    } else {
-        [self setShadowImage:img];
-    }
-}
--(void)reloadBarBackgroundColor:(nullable UIColor *)color{
-    if (@available(iOS 15.0, *)) {
-        [self setRr_OrginBackgroundColor:color];
-        BOOL transparent = [self rr_Transparent];
-        [self _updateAppearanceBarActionBlock:^(UINavigationBarAppearance *obj) {
-            if (transparent) {
-                obj.backgroundColor = nil;
-                obj.backgroundColor = nil;
-            }else {
-                obj.backgroundColor = color;
-                obj.backgroundColor = color;
-            }
-        }];
-    } else {
-        [self setBarTintColor:color];
-    }
-}
--(void)reloadBarTitleTextAttributes:(nullable NSDictionary<NSAttributedStringKey, id>*)titleTextAttributes{
-    if (@available(iOS 15.0, *)) {
-        [self _updateAppearanceBarActionBlock:^(UINavigationBarAppearance *obj) {
-            obj.titleTextAttributes = titleTextAttributes;
-        }];
-        
-    } else {
-        [self setTitleTextAttributes:titleTextAttributes];
-    }
+- (void)reloadBarBackgroundImage:(UIImage *)image {
+    [self rr_updateActiveNavigationAppearance:^(UINavigationBarAppearance *appearance) {
+        appearance.backgroundImage = image;
+    }];
 }
 
--(void)_reloadBarTransparent:(BOOL)transparent {
-    if (@available(iOS 26.0, *)) {
-        [self setRr_Transparent:transparent];
-        [self _updateAppearanceBarActionBlock:^(UINavigationBarAppearance *appearance) {
-            // 从透明页面返回时恢复完整默认配置，避免上一页的透明图片和颜色污染下一页。
-            if (transparent) {
-                [appearance configureWithTransparentBackground];
-            } else {
-                [appearance configureWithDefaultBackground];
-                appearance.backgroundColor = [self rr_OrginBackgroundColor];
-            }
-        }];
-        return;
-    }
-    if (@available(iOS 15.0, *)) {
-        [self setRr_Transparent:transparent];
-        
-        [self _updateAppearanceBarActionBlock:^(UINavigationBarAppearance *obj) {
-            if (transparent) {
-                obj.backgroundEffect = nil;
-                obj.backgroundEffect = nil;
-            }else {
-                UINavigationBarAppearance *temp = [[UINavigationBarAppearance alloc] init];
-                obj.backgroundEffect = temp.backgroundEffect;
-                obj.backgroundEffect = temp.backgroundEffect;
-            }
-        }];
-        [self reloadBarBackgroundColor:[self rr_OrginBackgroundColor]];
-    }
+- (void)reloadBarShadowImage:(UIImage *)image {
+    [self rr_updateActiveNavigationAppearance:^(UINavigationBarAppearance *appearance) {
+        appearance.shadowImage = image;
+        appearance.shadowColor = image ? UIColor.separatorColor : nil;
+    }];
 }
+
+- (void)reloadBarBackgroundColor:(UIColor *)color {
+    id owner = RRManagedTopNavigationItem(self) ?: (id)self;
+    objc_setAssociatedObject(owner, &kRRNavigationBackgroundColor, color, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    BOOL transparent = [objc_getAssociatedObject(owner, &kRRNavigationTransparency) boolValue];
+    [self rr_updateActiveNavigationAppearance:^(UINavigationBarAppearance *appearance) {
+        appearance.backgroundColor = transparent ? nil : color;
+    }];
+}
+
+- (void)reloadBarTitleTextAttributes:(NSDictionary<NSAttributedStringKey, id> *)titleTextAttributes {
+    [self rr_updateActiveNavigationAppearance:^(UINavigationBarAppearance *appearance) {
+        appearance.titleTextAttributes = titleTextAttributes ?: @{};
+    }];
+}
+
 @end
+
+@interface UIViewController (RRNavigationScrollEdge)
+- (void)rr_updateNavigationScrollEdgeForTransparentBar:(BOOL)transparent;
+@end
+
 @interface UIViewController (_RRAnimateAndCompletion)
 - (void)rr_animateAlongsideTransition:(void (^ __nullable)(id <UIViewControllerTransitionCoordinatorContext>context))animation
                            completion:(void (^ __nullable)(id <UIViewControllerTransitionCoordinatorContext>context))completion;
@@ -338,9 +267,13 @@ static char kAssociatedObjectKey_Transparent_SetupProperty;
     [self.navigationBarAppearanceDic setObject:[NSNumber numberWithBool:transparent] forKey:@"transparent"];
 }
 
++ (void)rr_setDefaultNavigationBarBackgroundColor:(UIColor *)color {
+    sDefaultNavigationBarBackgroundColor = [color copy];
+}
+
 -(UIColor *)defaultNavatationBarColor
 {
-    return  [[self.navigationBarAppearanceDic objectForKey:@"barColor"] copy];
+    return [[self.navigationBarAppearanceDic objectForKey:@"barColor"] copy] ?: sDefaultNavigationBarBackgroundColor;
 }
 
 -(void)setDefaultNavatationBarColor:(UIColor *)c
@@ -391,50 +324,70 @@ static char kAssociatedObjectKey_Transparent_SetupProperty;
 }
 
 
-#pragma mark- transparent
--(void)setNavigationBarTransparent:(BOOL)transparent
-{
-    if (@available(iOS 26.0, *)) {
-        // 每次页面切换都重建公开 appearance，覆盖显式设置过背景的页面，而不插入旧版透明占位图。
-        self.navigationBar.translucent = YES;
-        [self.navigationBar _reloadBarTransparent:transparent];
+#pragma mark - Background
+
+- (void)rr_applyNavigationAppearanceForViewController:(nullable UIViewController *)viewController
+                                           transparent:(BOOL)transparent
+                                   titleTextAttributes:(nullable NSDictionary<NSAttributedStringKey, id> *)titleTextAttributes {
+    // 嵌入子页面使用实际入栈控制器的 Item，转场时仍为目标页面写入自己的外观。
+    UIViewController *owner = viewController;
+    while (owner && owner.parentViewController != self) {
+        owner = owner.parentViewController;
+    }
+    if (viewController && (!owner || (owner != viewController &&
+        ([owner overtyleSettingsByYourSelf] || owner.rr_overtyleSettingsByYourSelf)))) {
         return;
     }
-    if(transparent == self.navigationBarTransparent)
-        return;
-    
-    UIImage *img = nil;
-    
-    if(transparent)
-    {
-        if(!sNavigationBarTransparentImage)
-        {
-            CGRect rect = CGRectMake(0, 0, 1, 1);
-            
-            UIGraphicsBeginImageContext(rect.size);
-            
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context,[UIColor clearColor].CGColor);
-            CGContextFillRect(context, rect);
-            sNavigationBarTransparentImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
+
+    UINavigationBar *bar = self.navigationBar;
+    UINavigationItem *item = owner.navigationItem;
+    id appearanceOwner = item ?: (id)bar;
+    UINavigationBarAppearance *appearance = [(item.standardAppearance ?: bar.standardAppearance) copy];
+    // 每次重新选定背景层，透明和图片模式都不会残留上一个状态的磨砂或分割线。
+    [appearance configureWithTransparentBackground];
+    if (!transparent) {
+        UIImage *image = viewController ? [viewController preferredNavigationBarBackgroundImage] : self.defaultNavigationBarBackgroundImage;
+        if (image) {
+            appearance.backgroundImage = image;
+        } else {
+            UIColor *color = objc_getAssociatedObject(appearanceOwner, &kRRNavigationBackgroundColor);
+            color = color ?: (viewController ? [viewController preferredNavatationBarColor] : self.defaultNavatationBarColor);
+            UIBlurEffect *effect = [viewController preferredNavigationBarBackgroundEffect];
+            if (color || effect) {
+                appearance.backgroundColor = color;
+                appearance.backgroundEffect = effect;
+            } else {
+                [appearance configureWithDefaultBackground];
+            }
         }
-        img = sNavigationBarTransparentImage;
+        appearance.shadowColor = [viewController preferredNavigationBarShadowColor];
     }
-    [self.navigationBar _reloadBarTransparent:transparent];
-    [self.navigationBar reloadBarBackgroundImage:img];
-    [self.navigationBar reloadBarShadowImage:img];
+    if (titleTextAttributes) {
+        appearance.titleTextAttributes = titleTextAttributes;
+    }
+
+    objc_setAssociatedObject(appearanceOwner, &kRRNavigationTransparency, @(transparent), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    if (@available(iOS 26.0, *)) {
+        bar.translucent = YES;
+    }
+    RRApplyNavigationAppearance(bar, item, appearance);
+    [viewController rr_updateNavigationScrollEdgeForTransparentBar:transparent];
 }
 
--(BOOL)isNavigationBarTransparent
-{
-    if (@available(iOS 13.0, *)) {
-        return [self.navigationBar rr_Transparent];
+- (void)setNavigationBarTransparent:(BOOL)transparent {
+    UIViewController *viewController = self.topViewController;
+    id owner = viewController.navigationItem ?: (id)self.navigationBar;
+    NSNumber *current = objc_getAssociatedObject(owner, &kRRNavigationTransparency);
+    if (current && current.boolValue == transparent) {
+        return;
     }
-    UIImage *bgImage = [self.navigationBar backgroundImageForBarMetrics:UIBarMetricsDefault];
-    return [bgImage isEqual:sNavigationBarTransparentImage];
+    [self rr_applyNavigationAppearanceForViewController:viewController transparent:transparent titleTextAttributes:nil];
 }
 
+- (BOOL)isNavigationBarTransparent {
+    id owner = self.topViewController.navigationItem ?: (id)self.navigationBar;
+    return [objc_getAssociatedObject(owner, &kRRNavigationTransparency) boolValue];
+}
 
 #pragma mark- push/pop completion block
 
